@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apollo Prospector</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #07070f;
+  --s1: #0d0d1a;
+  --s2: #131320;
+  --s3: #1a1a2a;
+  --border: rgba(255,255,255,0.05);
+  --border2: rgba(255,255,255,0.09);
+  --border3: rgba(255,255,255,0.14);
+  --text: #ddddf5;
+  --text2: #6e6e9a;
+  --text3: #38384a;
+  --accent: #7055f5;
+  --accent-soft: rgba(112,85,245,0.15);
+  --green: #1fd672;
+  --green-soft: rgba(31,214,114,0.1);
+  --amber: #f0a500;
+  --amber-soft: rgba(240,165,0,0.1);
+  --red: #f04545;
+  --red-soft: rgba(240,69,69,0.1);
+  --teal: #0fd4c4;
+  --teal-soft: rgba(15,212,196,0.1);
+  --blue: #4d9fff;
+  --blue-soft: rgba(77,159,255,0.1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); }
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  grid-template-rows: 48px 1fr;
+  height: 100vh;
+}
+
+/* Header */
+.hdr {
+  grid-column: 1/-1;
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 18px; gap: 14px;
+}
+.hdr-logo {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 600; font-size: 13px; letter-spacing: -.2px;
+}
+.hdr-orb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+.hdr-sep { width: 1px; height: 16px; background: var(--border2); }
+.hdr-state {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text2);
+}
+.state-pip { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); flex-shrink: 0; transition: background .3s; }
+.state-pip.idle { background: var(--text3); }
+.state-pip.waiting { background: var(--amber); animation: blink 1s ease-in-out infinite; }
+.state-pip.running { background: var(--green); animation: blink 1s ease-in-out infinite; }
+.state-pip.done { background: var(--green); }
+.state-pip.error { background: var(--red); }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
+
+.hdr-right { margin-left: auto; display: flex; gap: 7px; }
+
+/* Sidebar */
+.side {
+  background: var(--s1);
+  border-right: 1px solid var(--border);
+  padding: 18px 14px;
+  display: flex; flex-direction: column; gap: 18px;
+  overflow-y: auto;
+}
+.sec-lbl {
+  font-size: 10px; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text3);
+  margin-bottom: 8px;
+}
+
+/* Upload */
+.drop {
+  border: 1.5px dashed var(--border2);
+  border-radius: 9px; padding: 18px 12px;
+  text-align: center; cursor: pointer;
+  transition: all .2s; background: var(--s2);
+}
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop-icon { font-size: 20px; opacity: .35; margin-bottom: 7px; }
+.drop-ttl { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
+.drop-sub { font-size: 11px; color: var(--text2); }
+.drop-ok {
+  background: var(--green-soft); border: 1px solid rgba(31,214,114,.2);
+  border-radius: 7px; padding: 8px 10px;
+  font-size: 11px; font-family: 'JetBrains Mono'; color: var(--green);
+  display: none;
+}
+
+/* Settings */
+.set-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.set-lbl { font-size: 12px; color: var(--text2); }
+.set-row input[type=number] {
+  width: 60px; background: var(--s2);
+  border: 1px solid var(--border2); border-radius: 6px;
+  color: var(--text); font-family: 'Inter'; font-size: 12px;
+  padding: 5px 8px; outline: none; text-align: right;
+}
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.stat {
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px;
+}
+.stat-n { font-size: 22px; font-weight: 600; font-family: 'JetBrains Mono'; letter-spacing: -1px; line-height: 1; margin-bottom: 3px; }
+.stat-l { font-size: 10px; color: var(--text2); }
+
+/* Tiers */
+.tier-rows { display: flex; flex-direction: column; gap: 6px; }
+.tier-r { display: flex; align-items: center; gap: 7px; }
+.tier-dot { width: 7px; height: 7px; border-radius: 2px; flex-shrink: 0; }
+.tier-nm { font-size: 11px; color: var(--text2); flex: 1; }
+.tier-track { width: 50px; height: 3px; background: var(--s3); border-radius: 2px; overflow: hidden; }
+.tier-fill { height: 100%; border-radius: 2px; transition: width .5s; }
+.tier-v { font-size: 11px; font-family: 'JetBrains Mono'; color: var(--text); min-width: 18px; text-align: right; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 8px 14px; border-radius: 8px; border: none;
+  font-family: 'Inter'; font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.btn-run { background: var(--accent); color: #fff; width: 100%; box-shadow: 0 0 16px rgba(112,85,245,.3); }
+.btn-run:hover:not(:disabled) { background: #8a6af7; }
+.btn-run:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
+.btn-stop { background: var(--red-soft); color: var(--red); border: 1px solid rgba(240,69,69,.2); width: 100%; }
+.btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+.btn-outline:hover { color: var(--text); border-color: var(--border3); }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+
+/* Main */
+.main { display: flex; flex-direction: column; overflow: hidden; }
+
+.toolbar {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 18px; border-bottom: 1px solid var(--border);
+  background: var(--s1); flex-shrink: 0;
+}
+.srch {
+  background: var(--s2); border: 1px solid var(--border2);
+  border-radius: 7px; color: var(--text);
+  font-family: 'Inter'; font-size: 12px;
+  padding: 6px 11px; outline: none; width: 190px;
+  transition: border-color .15s;
+}
+.srch:focus { border-color: var(--accent); }
+.srch::placeholder { color: var(--text3); }
+.fsel {
+  background: var(--s2); border: 1px solid var(--border2);
+  border-radius: 7px; color: var(--text);
+  font-family: 'Inter'; font-size: 12px;
+  padding: 6px 9px; outline: none; cursor: pointer;
+}
+.ri { margin-left: auto; font-size: 11px; color: var(--text2); }
+
+/* Progress */
+.prog-bar-wrap {
+  padding: 8px 18px 0; flex-shrink: 0;
+  display: none;
+}
+.prog-track { height: 2px; background: var(--s3); border-radius: 1px; overflow: hidden; margin-bottom: 5px; }
+.prog-fill { height: 100%; background: var(--accent); border-radius: 1px; transition: width .3s; box-shadow: 0 0 6px var(--accent); }
+.prog-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text2); padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+/* Log */
+.log-bar {
+  padding: 5px 18px; font-size: 11px; font-family: 'JetBrains Mono';
+  color: var(--text2); background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex-shrink: 0; display: none;
+}
+
+/* Table */
+.tbl-wrap { flex: 1; overflow-y: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--s1);
+  text-align: left; padding: 9px 14px;
+  font-size: 10px; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:hover { background: rgba(255,255,255,.018); }
+td { padding: 9px 14px; vertical-align: middle; }
+
+.av {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; flex-shrink: 0;
+}
+.nc { display: flex; align-items: center; gap: 9px; }
+.nm { font-weight: 500; }
+.nc-co { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.tc { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text2); font-size: 12px; }
+.em { font-family: 'JetBrains Mono'; font-size: 11px; color: var(--blue); }
+.em-no { color: var(--text3); font-style: italic; font-size: 11px; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 600; padding: 2px 7px;
+  border-radius: 999px; white-space: nowrap;
+}
+.b-sec { background: var(--accent-soft); color: #a496ff; border: 1px solid rgba(112,85,245,.25); }
+.b-com { background: var(--teal-soft); color: var(--teal); border: 1px solid rgba(15,212,196,.2); }
+.b-tec { background: var(--green-soft); color: var(--green); border: 1px solid rgba(31,214,114,.2); }
+.b-fal { background: var(--amber-soft); color: var(--amber); border: 1px solid rgba(240,165,0,.2); }
+
+.li-a { color: var(--text3); font-size: 12px; text-decoration: none; transition: color .15s; }
+.li-a:hover { color: var(--text2); }
+
+/* Empty */
+.empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; height: 100%;
+  text-align: center; padding: 40px;
+}
+.empty-ico { font-size: 36px; opacity: .15; margin-bottom: 14px; }
+.empty-ttl { font-size: 15px; font-weight: 500; margin-bottom: 8px; }
+.empty-sub { font-size: 12px; color: var(--text2); line-height: 1.7; max-width: 400px; }
+.empty-sub code { background: var(--s3); border-radius: 4px; padding: 1px 5px; font-family: 'JetBrains Mono'; font-size: 11px; color: var(--accent); }
+
+/* How-to steps */
+.steps { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; text-align: left; max-width: 340px; }
+.step { display: flex; gap: 10px; align-items: flex-start; }
+.step-n {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent-soft); color: #a496ff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+}
+.step-t { font-size: 12px; color: var(--text2); line-height: 1.5; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 18px; right: 18px; z-index: 999;
+  background: var(--s3); border: 1px solid var(--border3);
+  border-radius: 8px; padding: 10px 15px;
+  font-size: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.6);
+  transform: translateY(50px); opacity: 0;
+  transition: all .2s; pointer-events: none; max-width: 280px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="hdr-logo">
+      <div class="hdr-orb"></div>
+      Apollo Prospector
+    </div>
+    <div class="hdr-sep"></div>
+    <div class="hdr-state">
+      <div class="state-pip idle" id="pip"></div>
+      <span id="state-txt">Upload CSV &amp; click Run — Claude in Chrome will handle everything</span>
+    </div>
+    <div class="hdr-right">
+      <button class="btn btn-outline btn-sm" onclick="exportOutreach()">Export Outreach CSV</button>
+      <button class="btn btn-outline btn-sm" onclick="exportAll()">Export all</button>
+      <button class="btn btn-outline btn-sm" onclick="clearAll()">Clear</button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="side">
+
+    <!-- Upload -->
+    <div>
+      <div class="sec-lbl">Accounts CSV</div>
+      <div class="drop" id="drop" onclick="document.getElementById('csv-in').click()">
+        <div class="drop-icon">&#8659;</div>
+        <div class="drop-ttl">Drop CSV here</div>
+        <div class="drop-sub">Company name + domain columns</div>
+      </div>
+      <div class="drop-ok" id="drop-ok"></div>
+      <input type="file" id="csv-in" accept=".csv,.txt" style="display:none" onchange="loadCSV(this)">
+    </div>
+
+    <!-- Settings -->
+    <div>
+      <div class="sec-lbl">Settings</div>
+      <div class="set-row">
+        <span class="set-lbl">Max contacts / company</span>
+        <input type="number" id="max-per" value="2" min="1" max="3">
+      </div>
+    </div>
+
+    <!-- Run button -->
+    <div id="ctrl-run">
+      <button class="btn btn-run" id="run-btn" onclick="startRun()" disabled>
+        &#9654;&nbsp; Run all accounts
+      </button>
+    </div>
+    <div id="ctrl-stop" style="display:none">
+      <button class="btn btn-stop" onclick="stopRun()">&#9632;&nbsp; Stop</button>
+    </div>
+
+    <!-- Stats -->
+    <div>
+      <div class="sec-lbl">Results</div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-n" id="s-contacts">0</div><div class="stat-l">Contacts</div></div>
+        <div class="stat"><div class="stat-n" id="s-emails">0</div><div class="stat-l">With email</div></div>
+        <div class="stat"><div class="stat-n" id="s-cos">0</div><div class="stat-l">Companies</div></div>
+        <div class="stat"><div class="stat-n" id="s-icp">0%</div><div class="stat-l">ICP rate</div></div>
+      </div>
+    </div>
+
+    <!-- Tier bars -->
+    <div>
+      <div class="sec-lbl">Tier breakdown</div>
+      <div class="tier-rows">
+        <div class="tier-r"><div class="tier-dot" style="background:#a496ff"></div><div class="tier-nm">Security</div><div class="tier-track"><div class="tier-fill" id="tf-sec" style="background:#a496ff;width:0%"></div></div><div class="tier-v" id="tv-sec">0</div></div>
+        <div class="tier-r"><div class="tier-dot" style="background:var(--teal)"></div><div class="tier-nm">Compliance</div><div class="tier-track"><div class="tier-fill" id="tf-com" style="background:var(--teal);width:0%"></div></div><div class="tier-v" id="tv-com">0</div></div>
+        <div class="tier-r"><div class="tier-dot" style="background:var(--green)"></div><div class="tier-nm">Technology</div><div class="tier-track"><div class="tier-fill" id="tf-tec" style="background:var(--green);width:0%"></div></div><div class="tier-v" id="tv-tec">0</div></div>
+        <div class="tier-r"><div class="tier-dot" style="background:var(--amber)"></div><div class="tier-nm">Fallback</div><div class="tier-track"><div class="tier-fill" id="tf-fal" style="background:var(--amber);width:0%"></div></div><div class="tier-v" id="tv-fal">0</div></div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <div class="toolbar">
+      <input type="text" class="srch" id="srch" placeholder="Search name, company, email..." oninput="render()">
+      <select class="fsel" id="tf" onchange="render()">
+        <option value="">All tiers</option>
+        <option value="icp-security">Security</option>
+        <option value="icp-compliance">Compliance</option>
+        <option value="icp-technology">Technology</option>
+        <option value="fallback">Fallback</option>
+      </select>
+      <select class="fsel" id="ef" onchange="render()">
+        <option value="">All contacts</option>
+        <option value="1">With email</option>
+        <option value="0">No email</option>
+      </select>
+      <div class="ri" id="ri">0 contacts</div>
+    </div>
+
+    <div class="prog-bar-wrap" id="prog-wrap">
+      <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="prog-row">
+        <span id="prog-lbl">Starting...</span>
+        <span id="prog-pct">0%</span>
+      </div>
+    </div>
+
+    <div class="log-bar" id="log-bar">›</div>
+
+    <div class="tbl-wrap" id="tbl-wrap">
+      <div class="empty" id="empty">
+        <div class="empty-ico">&#9788;</div>
+        <div class="empty-ttl">How this works</div>
+        <div class="empty-sub">
+          This tool uses <strong>Claude in Chrome</strong> to search Apollo using your existing login — no API keys needed.
+        </div>
+        <div class="steps">
+          <div class="step"><div class="step-n">1</div><div class="step-t">Upload your accounts CSV (needs Company Name + Domain columns)</div></div>
+          <div class="step"><div class="step-n">2</div><div class="step-t">Make sure you're logged into Apollo in another tab</div></div>
+          <div class="step"><div class="step-n">3</div><div class="step-t">Click <strong>Run all accounts</strong> — Claude in Chrome takes over</div></div>
+          <div class="step"><div class="step-n">4</div><div class="step-t">Watch contacts populate in real time, then export to Outreach</div></div>
+        </div>
+      </div>
+      <table id="tbl" style="display:none">
+        <thead>
+          <tr>
+            <th>Contact</th><th>Title</th><th>Email</th><th>Tier</th><th>LinkedIn</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──
+let companies = [];
+let contacts = [];
+let running = false;
+let stopFlag = false;
+
+// ── ICP scoring — broad keyword matching ──
+const ICP_SEC = [
+  // CISO variants
+  'ciso','chief information security','chief cyber','chief infosec',
+  // VP level security
+  'vp security','vp of security','vp cyber','vp of cyber','vp cybersecurity','vp of cybersecurity',
+  'vp information security','vp of information security','vp infosec',
+  // Head of security variants
+  'head of security','head of infosec','head of information security','head of cyber',
+  'head of cybersecurity','head of it security','head of cyber security',
+  'head of information assurance','head of network security','head of application security',
+  // Director level
+  'director of security','director of cyber','director of infosec','director of information security',
+  'director of cybersecurity','director of it security','director of cyber security',
+  'director of information assurance',
+  // Group/Global/Deputy
+  'group ciso','group head of security','global ciso','global head of security',
+  'deputy ciso','associate ciso','assistant ciso',
+  // Manager level (still ICP)
+  'information security manager','cyber security manager','it security manager',
+  'cybersecurity manager','security operations manager','soc manager',
+  // Officer titles
+  'chief security officer','information security officer','cyber security officer',
+  // Other security titles
+  'security architect','lead security','principal security','security lead',
+  'security engineer lead','security operations lead','soc lead',
+  'penetration test manager','red team lead','blue team lead',
+  'security awareness','security risk','security assurance'
+];
+
+const ICP_COM = [
+  // CCO / compliance titles
+  'chief compliance officer','cco','head of compliance','vp compliance','vp of compliance',
+  'director of compliance','compliance director','compliance manager','group compliance',
+  'global compliance','head of regulatory','regulatory compliance','compliance officer',
+  'chief risk and compliance','head of legal and compliance','vp legal and compliance',
+  // Risk titles
+  'chief risk officer','cro','head of risk','vp risk','vp of risk','director of risk',
+  'risk director','risk manager','head of enterprise risk','enterprise risk manager',
+  'operational risk','group risk','global risk','chief risk',
+  // Audit titles
+  'chief audit executive','head of audit','director of audit','vp audit','vp of audit',
+  'audit director','internal audit','head of internal audit','audit manager',
+  'head of assurance',
+  // DPO / privacy
+  'data protection officer','dpo','head of data protection','vp data protection',
+  'director of data protection','privacy officer','chief privacy officer','cpo',
+  'head of privacy','privacy manager','data privacy','gdpr',
+  // GRC
+  'head of grc','director of grc','vp grc','grc manager','governance risk',
+  'risk and compliance','head of governance','chief governance',
+  // Legal with compliance scope
+  'general counsel','head of legal','chief legal officer','clo',
+  'information governance','data governance','head of data governance',
+  // Regulatory
+  'head of regulatory affairs','regulatory affairs','regulatory risk'
+];
+
+const ICP_TEC = [
+  // CIO variants
+  'cio','chief information officer','group cio','global cio','deputy cio',
+  // CTO variants
+  'cto','chief technology officer','group cto','global cto','deputy cto',
+  // CDO / digital
+  'chief digital officer','cdo','head of digital','director of digital',
+  'vp digital','vp of digital','digital director','chief digital',
+  // VP IT
+  'vp of it','vp it','vp information technology','vp of information technology',
+  'vice president it','vice president of it',
+  // Head of IT
+  'head of it','head of information technology','head of it operations',
+  'head of it infrastructure','head of it services','head of technology',
+  'head of it and digital',
+  // Director IT
+  'director of it','director of information technology','it director',
+  'director of technology','technology director','director of it operations',
+  'director of infrastructure','director of it services',
+  // Engineering leadership
+  'head of engineering','vp engineering','vp of engineering','director of engineering',
+  'chief engineer','head of software','vp software',
+  // Infrastructure / Cloud
+  'head of infrastructure','director of infrastructure','vp infrastructure',
+  'head of cloud','director of cloud','cloud director','head of networks',
+  // IT Manager (senior)
+  'it manager','senior it manager','it operations manager','infrastructure manager',
+  // Group IT
+  'group it director','group head of it','group head of technology',
+  'global head of it','global it director'
+];
+
+function scoreTier(t) {
+  if (!t) return 'fallback';
+  const s = t.toLowerCase();
+  if (ICP_SEC.some(k => s.includes(k))) return 'icp-security';
+  if (ICP_COM.some(k => s.includes(k))) return 'icp-compliance';
+  if (ICP_TEC.some(k => s.includes(k))) return 'icp-technology';
+  return 'fallback';
+}
+
+// ── Email pattern inference ──
+// Given a list of contacts at the same company where some have emails,
+// infer the pattern (e.g. firstname.lastname@domain.com) and apply it
+// to contacts missing an email.
+
+function inferEmailPattern(knownEmail, firstName, lastName) {
+  // Extract the local part (before @)
+  const atIdx = knownEmail.indexOf('@');
+  if (atIdx < 0) return null;
+  const domain = knownEmail.slice(atIdx); // e.g. @acme.com
+  const local = knownEmail.slice(0, atIdx).toLowerCase();
+  const f = (firstName||'').toLowerCase().replace(/[^a-z]/g,'');
+  const l = (lastName||'').toLowerCase().replace(/[^a-z]/g,'');
+  const fi = f[0] || '';
+  const li = l[0] || '';
+
+  // Detect which pattern the known email uses
+  if (f && l) {
+    if (local === `${f}.${l}`) return 'firstname.lastname';
+    if (local === `${f}${l}`) return 'firstnamelastname';
+    if (local === `${fi}${l}`) return 'flastname';
+    if (local === `${fi}.${l}`) return 'f.lastname';
+    if (local === `${f}.${li}`) return 'firstname.l';
+    if (local === `${f}`) return 'firstname';
+    if (local === `${l}`) return 'lastname';
+    if (local === `${f[0]}${l}`) return 'flastname'; // same as fi+l
+  }
+  return null;
+}
+
+function applyPattern(pattern, firstName, lastName, domain) {
+  const f = (firstName||'').toLowerCase().replace(/[^a-z]/g,'');
+  const l = (lastName||'').toLowerCase().replace(/[^a-z]/g,'');
+  const fi = f[0]||'';
+  const li = l[0]||'';
+  const map = {
+    'firstname.lastname': `${f}.${l}`,
+    'firstnamelastname': `${f}${l}`,
+    'flastname': `${fi}${l}`,
+    'f.lastname': `${fi}.${l}`,
+    'firstname.l': `${f}.${li}`,
+    'firstname': f,
+    'lastname': l,
+  };
+  const local = map[pattern];
+  if (!local || !f || !l) return null;
+  return `${local}${domain}`;
+}
+
+function inferMissingEmails(contactList) {
+  // Group by company domain
+  const byDomain = {};
+  contactList.forEach(c => {
+    const domain = getDomainFromEmail(c.email) || guessDomain(c.company);
+    if (!byDomain[domain]) byDomain[domain] = [];
+    byDomain[domain].push(c);
+  });
+
+  Object.values(byDomain).forEach(group => {
+    // Find contacts WITH verified emails to detect pattern
+    const withEmail = group.filter(c => c.email && c.firstName && c.lastName);
+    if (!withEmail.length) return;
+
+    // Try to detect pattern from first contact that has both name parts matching email
+    let detectedPattern = null;
+    let emailDomain = null;
+    for (const c of withEmail) {
+      const p = inferEmailPattern(c.email, c.firstName, c.lastName);
+      if (p) {
+        detectedPattern = p;
+        emailDomain = c.email.slice(c.email.indexOf('@'));
+        break;
+      }
+    }
+    if (!detectedPattern || !emailDomain) return;
+
+    // Apply pattern to contacts missing email
+    group.forEach(c => {
+      if (c.email || !c.firstName || !c.lastName) return;
+      const inferred = applyPattern(detectedPattern, c.firstName, c.lastName, emailDomain);
+      if (inferred) {
+        c.email = inferred;
+        c.emailInferred = true; // flag so we can show it differently in UI
+      }
+    });
+  });
+}
+
+function getDomainFromEmail(email) {
+  if (!email) return null;
+  const i = email.indexOf('@');
+  return i >= 0 ? email.slice(i+1) : null;
+}
+
+// ── CSV parsing ──
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return [];
+  const sep = lines[0].includes('\t') ? '\t' : ',';
+  const hdrs = lines[0].split(sep).map(h => h.replace(/"/g,'').trim().toLowerCase());
+  const ni = hdrs.findIndex(h => ['company','company name','account name','account','name','organization'].includes(h));
+  const di = hdrs.findIndex(h => ['domain','website','url','web','site'].includes(h));
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = splitLine(lines[i], sep);
+    const co = (ni >= 0 ? cols[ni] : '').replace(/"/g,'').trim();
+    const rd = (di >= 0 ? cols[di] : '').replace(/"/g,'').trim();
+    const domain = cleanDomain(rd) || guessDomain(co);
+    if (co || domain) rows.push({ company: co || domain, domain });
+  }
+  return rows;
+}
+
+function splitLine(line, sep) {
+  const r = []; let c = ''; let q = false;
+  for (const ch of line) {
+    if (ch === '"') { q = !q; continue; }
+    if (ch === sep && !q) { r.push(c); c = ''; continue; }
+    c += ch;
+  }
+  r.push(c);
+  return r;
+}
+
+function cleanDomain(s) {
+  if (!s) return '';
+  return s.trim().toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0];
+}
+
+function guessDomain(co) {
+  if (!co) return '';
+  return co.toLowerCase().replace(/[^a-z0-9]/g,'') + '.com';
+}
+
+function loadCSV(inp) {
+  const file = inp.files[0];
+  if (!file) return;
+  new FileReader().onload = e => {
+    companies = parseCSV(e.target.result);
+    const ok = document.getElementById('drop-ok');
+    if (!companies.length) { toast('Could not detect companies', true); return; }
+    ok.style.display = 'block';
+    ok.textContent = `✓ ${companies.length} companies loaded`;
+    document.getElementById('run-btn').disabled = false;
+    toast(`${companies.length} companies ready`);
+  };
+  const fr = new FileReader();
+  fr.onload = e => {
+    companies = parseCSV(e.target.result);
+    const ok = document.getElementById('drop-ok');
+    if (!companies.length) { toast('Could not detect companies', true); return; }
+    ok.style.display = 'block';
+    ok.textContent = `✓ ${companies.length} companies loaded`;
+    document.getElementById('run-btn').disabled = false;
+    toast(`${companies.length} companies ready`);
+  };
+  fr.readAsText(file);
+  inp.value = '';
+}
+
+// Drag/drop on upload zone
+const dz = document.getElementById('drop');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f) {
+    const dt = new DataTransfer(); dt.items.add(f);
+    const inp = document.getElementById('csv-in');
+    inp.files = dt.files; loadCSV(inp);
+  }
+});
+
+// ── Run orchestration ──
+// The artifact exposes window.PROSPECTOR so Claude in Chrome can interact with it
+window.PROSPECTOR = {
+  getQueue: () => companies.map((c, i) => ({ idx: i, ...c })),
+  getMaxPer: () => parseInt(document.getElementById('max-per').value) || 2,
+  addContact: (c) => {
+    // Called by Claude in Chrome for each contact found
+    if (!c.firstName && !c.lastName) return;
+    const emailLow = (c.email||'').toLowerCase();
+    if (emailLow && contacts.some(x => (x.email||'').toLowerCase() === emailLow)) return;
+    c.tier = c.tier || scoreTier(c.title);
+    c.emailInferred = false;
+    contacts.push(c);
+    // Re-run email inference across all contacts every time we add one
+    inferMissingEmails(contacts);
+    render(); renderStats();
+  },
+  setProgress: (idx, total, label) => {
+    const pct = Math.round(idx / total * 100);
+    document.getElementById('prog-fill').style.width = pct + '%';
+    document.getElementById('prog-pct').textContent = pct + '%';
+    document.getElementById('prog-lbl').textContent = label;
+    setLog(label);
+  },
+  setStatus: (state, msg) => setState(state, msg),
+  done: () => {
+    running = false; stopFlag = false;
+    document.getElementById('ctrl-run').style.display = '';
+    document.getElementById('ctrl-stop').style.display = 'none';
+    setState('done', `Done — ${contacts.filter(c=>c.email).length} emails found`);
+    toast(`Complete! ${contacts.filter(c=>c.email).length} contacts with emails`);
+  },
+  isStopped: () => stopFlag
+};
+
+function startRun() {
+  if (!companies.length) { toast('Upload a CSV first', true); return; }
+  running = true; stopFlag = false;
+  document.getElementById('ctrl-run').style.display = 'none';
+  document.getElementById('ctrl-stop').style.display = '';
+  document.getElementById('prog-wrap').style.display = '';
+  document.getElementById('log-bar').style.display = 'block';
+  setState('waiting', 'Waiting for Claude in Chrome to start...');
+  
+  // Signal to Claude in Chrome via console (Claude in Chrome monitors this)
+  console.log('PROSPECTOR_START', JSON.stringify({
+    companies: companies,
+    maxPer: parseInt(document.getElementById('max-per').value) || 2
+  }));
+  
+  toast('Run started — Claude in Chrome is taking over');
+}
+
+function stopRun() {
+  stopFlag = true;
+  setState('idle', 'Stopping...');
+  console.log('PROSPECTOR_STOP');
+  toast('Stopping after current company...');
+}
+
+// ── Rendering ──
+const PAL = [
+  ['#7055f5','#14103a'],['#0fd4c4','#061f1d'],['#1fd672','#061f10'],
+  ['#f0a500','#1f1500'],['#e8407a','#1f0814'],['#4d9fff','#081426'],
+  ['#c478f5','#1a0b2a'],['#ff6b6b','#200d0d']
+];
+function getColors(n) {
+  const i = ((n.charCodeAt(0)||0)+(n.charCodeAt(1)||0)) % PAL.length;
+  return PAL[i];
+}
+function ini(f,l) { return ((f||'')[0]||'').toUpperCase()+((l||'')[0]||'').toUpperCase(); }
+const BC = { 'icp-security':'b-sec','icp-compliance':'b-com','icp-technology':'b-tec','fallback':'b-fal' };
+const BL = { 'icp-security':'Security','icp-compliance':'Compliance','icp-technology':'Technology','fallback':'Fallback' };
+
+function render() {
+  const q = (document.getElementById('srch').value||'').toLowerCase();
+  const tf = document.getElementById('tf').value;
+  const ef = document.getElementById('ef').value;
+
+  const filt = contacts.filter(c => {
+    if (q && !['firstName','lastName','company','email','title'].some(k=>(c[k]||'').toLowerCase().includes(q))) return false;
+    if (tf && c.tier !== tf) return false;
+    if (ef === '1' && !c.email) return false;
+    if (ef === '0' && c.email) return false;
+    return true;
+  });
+
+  document.getElementById('ri').textContent = `${filt.length} contact${filt.length!==1?'s':''}`;
+  const empty = document.getElementById('empty');
+  const tbl = document.getElementById('tbl');
+
+  if (!contacts.length) { empty.style.display='flex'; tbl.style.display='none'; return; }
+  empty.style.display='none'; tbl.style.display='';
+
+  document.getElementById('tbody').innerHTML = filt.map(c => {
+    const name = `${c.firstName||''} ${c.lastName||''}`.trim()||'—';
+    const [bg,fg] = getColors(name);
+    const li = c.linkedin ? (c.linkedin.startsWith('http')?c.linkedin:'https://'+c.linkedin) : '';
+    return `<tr>
+      <td><div class="nc">
+        <div class="av" style="background:${bg};color:${fg}">${ini(c.firstName,c.lastName)||'?'}</div>
+        <div><div class="nm">${name}</div><div class="nc-co">${c.company||'—'}</div></div>
+      </div></td>
+      <td><div class="tc" title="${c.title||''}">${c.title||'—'}</div></td>
+      <td>${c.email
+        ? c.emailInferred
+          ? `<span class="em" style="color:var(--amber);opacity:.85" title="Inferred from company email pattern — not verified">${c.email} <span style="font-size:9px;opacity:.7">~inferred</span></span>`
+          : `<span class="em">${c.email}</span>`
+        : `<span class="em-no">not found</span>`}</td>
+      <td><span class="badge ${BC[c.tier]||'b-fal'}">${BL[c.tier]||'—'}</span></td>
+      <td>${li?`<a href="${li}" target="_blank" class="li-a">View ↗</a>`:`<span style="color:var(--text3)">—</span>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderStats() {
+  const we = contacts.filter(c=>c.email);
+  const icp = contacts.filter(c=>c.tier!=='fallback').length;
+  const icpR = contacts.length ? Math.round(icp/contacts.length*100) : 0;
+  const cos = new Set(contacts.map(c=>c.company)).size;
+  document.getElementById('s-contacts').textContent = contacts.length;
+  document.getElementById('s-emails').textContent = we.length;
+  document.getElementById('s-cos').textContent = cos;
+  document.getElementById('s-icp').textContent = icpR+'%';
+
+  const t = {'icp-security':0,'icp-compliance':0,'icp-technology':0,'fallback':0};
+  contacts.forEach(c => { const k = t[c.tier]!==undefined?c.tier:'fallback'; t[k]++; });
+  const mx = Math.max(...Object.values(t),1);
+  document.getElementById('tv-sec').textContent = t['icp-security'];
+  document.getElementById('tv-com').textContent = t['icp-compliance'];
+  document.getElementById('tv-tec').textContent = t['icp-technology'];
+  document.getElementById('tv-fal').textContent = t['fallback'];
+  document.getElementById('tf-sec').style.width = Math.round(t['icp-security']/mx*100)+'%';
+  document.getElementById('tf-com').style.width = Math.round(t['icp-compliance']/mx*100)+'%';
+  document.getElementById('tf-tec').style.width = Math.round(t['icp-technology']/mx*100)+'%';
+  document.getElementById('tf-fal').style.width = Math.round(t['fallback']/mx*100)+'%';
+}
+
+// ── Export ──
+function csvR(vals) { return vals.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(','); }
+function dl(name,content) {
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:'text/csv'}));
+  a.download=name; a.click();
+}
+
+function exportOutreach() {
+  const rows = contacts.filter(c=>c.email);
+  if (!rows.length) { toast('No contacts with emails yet',true); return; }
+  const hdr = csvR(['firstName','lastName','title','company','emailAddress','websiteUrl','linkedInUrl','tags']);
+  const body = rows.map(c=>csvR([c.firstName,c.lastName,c.title,c.company,c.email,'',c.linkedin,c.tier]));
+  dl('outreach_import.csv',[hdr,...body].join('\n'));
+  toast(`Exported ${rows.length} contacts for Outreach`);
+}
+
+function exportAll() {
+  if (!contacts.length) { toast('No contacts yet',true); return; }
+  const hdr = csvR(['firstName','lastName','title','company','email','linkedin','tier']);
+  const body = contacts.map(c=>csvR([c.firstName,c.lastName,c.title,c.company,c.email,c.linkedin,c.tier]));
+  dl('prospects_all.csv',[hdr,...body].join('\n'));
+  toast(`Exported ${contacts.length} contacts`);
+}
+
+function clearAll() {
+  if (running) { toast('Stop the run first',true); return; }
+  if (!confirm('Clear all contacts and loaded companies?')) return;
+  contacts=[]; companies=[];
+  document.getElementById('drop-ok').style.display='none';
+  document.getElementById('prog-wrap').style.display='none';
+  document.getElementById('log-bar').style.display='none';
+  document.getElementById('run-btn').disabled=true;
+  setState('idle','Upload CSV & click Run');
+  render(); renderStats();
+  toast('Cleared');
+}
+
+// ── Helpers ──
+function setState(type, msg) {
+  const pip = document.getElementById('pip');
+  pip.className = 'state-pip ' + (type||'idle');
+  document.getElementById('state-txt').textContent = msg;
+}
+function setLog(msg) { document.getElementById('log-bar').textContent = '› ' + msg; }
+
+let tt;
+function toast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = isErr ? 'rgba(240,69,69,.3)' : 'var(--border3)';
+  t.classList.add('show');
+  clearTimeout(tt);
+  tt = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
